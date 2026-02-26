@@ -41,7 +41,7 @@ class GoldApiService {
       final response = await dio.get(
         '$baseUrl/latest',
         queryParameters: {
-         'api_key': ApiEndpoints.apiKey,
+          'api_key': ApiEndpoints.apiKey,
           'currency': 'USD',
           'unit': 'toz',
         },

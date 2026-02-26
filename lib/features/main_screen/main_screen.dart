@@ -4,7 +4,9 @@ import 'package:gold_caurd_app/core/styling/app_colors.dart';
 
 import '../gold_chart_screen/views/gold_chart_screen.dart';
 import '../home/views/home_screen.dart';
-import '../alerts/views/alerts_screen.dart'; // ← إضافة الـ Import
+import '../alerts/views/alerts_screen.dart';
+import '../profile/profile_screen.dart';
+import '../calculator/gold_calculator_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -17,9 +19,11 @@ class _MainScreenState extends State<MainScreen> {
   int currentIndex = 0;
 
   final List<Widget> screens = [
-    HomeScreen(),
-    GoldChartScreen(),
-    AlertsScreen(), // ← إضافة شاشة Alerts
+    const HomeScreen(),
+    const GoldChartScreen(),
+    const GoldCalculatorScreen(),
+    const AlertsScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -31,7 +35,7 @@ class _MainScreenState extends State<MainScreen> {
           color: Colors.black,
           border: Border(
             top: BorderSide(
-              color: AppColors.secondaryColor.withOpacity(0.3),
+              color: AppColors.secondaryColor.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -40,12 +44,12 @@ class _MainScreenState extends State<MainScreen> {
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.black,
           selectedItemColor: AppColors.primaryColor,
-          unselectedItemColor: AppColors.secondaryColor.withOpacity(0.5),
+          unselectedItemColor: AppColors.secondaryColor.withValues(alpha: 0.5),
           currentIndex: currentIndex,
           elevation: 0,
-          selectedFontSize: 12.sp,
-          unselectedFontSize: 10.sp,
-          iconSize: 28.sp,
+          selectedFontSize: 11.sp,
+          unselectedFontSize: 9.sp,
+          iconSize: 24.sp,
           onTap: (index) {
             setState(() {
               currentIndex = index;
@@ -54,7 +58,7 @@ class _MainScreenState extends State<MainScreen> {
           items: [
             BottomNavigationBarItem(
               icon: Padding(
-                padding: EdgeInsets.only(bottom: 4.h),
+                padding: EdgeInsets.only(bottom: 3.h),
                 child: Icon(
                   currentIndex == 0 ? Icons.home : Icons.home_outlined,
                 ),
@@ -63,7 +67,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
             BottomNavigationBarItem(
               icon: Padding(
-                padding: EdgeInsets.only(bottom: 4.h),
+                padding: EdgeInsets.only(bottom: 3.h),
                 child: Icon(
                   currentIndex == 1
                       ? Icons.show_chart
@@ -72,16 +76,36 @@ class _MainScreenState extends State<MainScreen> {
               ),
               label: "Chart",
             ),
-            BottomNavigationBarItem( // ← إضافة Tab جديد
+            BottomNavigationBarItem(
               icon: Padding(
-                padding: EdgeInsets.only(bottom: 4.h),
+                padding: EdgeInsets.only(bottom: 3.h),
                 child: Icon(
                   currentIndex == 2
+                      ? Icons.calculate
+                      : Icons.calculate_outlined,
+                ),
+              ),
+              label: "Calculator",
+            ),
+            BottomNavigationBarItem(
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 3.h),
+                child: Icon(
+                  currentIndex == 3
                       ? Icons.notifications_active
                       : Icons.notifications_outlined,
                 ),
               ),
               label: "Alerts",
+            ),
+            BottomNavigationBarItem(
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 3.h),
+                child: Icon(
+                  currentIndex == 4 ? Icons.person : Icons.person_outline,
+                ),
+              ),
+              label: "Profile",
             ),
           ],
         ),

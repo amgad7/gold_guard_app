@@ -7,7 +7,6 @@ class SimpleAlertService {
   final AlertFirebaseService _alertService = AlertFirebaseService();
   final GoldApiService _apiService = GoldApiService();
 
-
   Future<List<String>> checkAlertsOnAppOpen() async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -36,11 +35,22 @@ class SimpleAlertService {
             currentPrice = currentModel.priceGram24k ?? 0;
         }
 
-        if (currentPrice >= alert.targetPrice) {
+        // Check based on direction
+        bool isTriggered = false;
+        if (alert.direction == 'below') {
+          isTriggered = currentPrice <= alert.targetPrice;
+        } else {
+          isTriggered = currentPrice >= alert.targetPrice;
+        }
+
+        if (isTriggered) {
           await _alertService.markAlertAsTriggered(alert.id!);
 
+          final directionText = alert.direction == 'below'
+              ? 'dropped to'
+              : 'reached';
           triggeredMessages.add(
-            ' Alert: Gold ${alert.karat} reached ${currentPrice.toStringAsFixed(2)} ${alert.currency}! (Target: ${alert.targetPrice} ${alert.currency})',
+            '📢 Alert: Gold ${alert.karat} $directionText ${currentPrice.toStringAsFixed(2)} ${alert.currency}! (Target: ${alert.targetPrice} ${alert.currency})',
           );
         }
       }
