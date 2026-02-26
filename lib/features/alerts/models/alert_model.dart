@@ -7,6 +7,7 @@ class AlertModel {
   final bool isActive;
   final DateTime createdAt;
   final bool isTriggered;
+  final String direction; // 'above' or 'below'
 
   AlertModel({
     this.id,
@@ -17,6 +18,7 @@ class AlertModel {
     this.isActive = true,
     required this.createdAt,
     this.isTriggered = false,
+    this.direction = 'above',
   });
 
   factory AlertModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class AlertModel {
       isActive: json['isActive'] as bool? ?? true,
       createdAt: DateTime.parse(json['createdAt'] as String),
       isTriggered: json['isTriggered'] as bool? ?? false,
+      direction: json['direction'] as String? ?? 'above',
     );
   }
 
@@ -42,6 +45,7 @@ class AlertModel {
       'isActive': isActive,
       'createdAt': createdAt.toIso8601String(),
       'isTriggered': isTriggered,
+      'direction': direction,
     };
   }
 
@@ -54,6 +58,7 @@ class AlertModel {
     bool? isActive,
     DateTime? createdAt,
     bool? isTriggered,
+    String? direction,
   }) {
     return AlertModel(
       id: id ?? this.id,
@@ -64,6 +69,7 @@ class AlertModel {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       isTriggered: isTriggered ?? this.isTriggered,
+      direction: direction ?? this.direction,
     );
   }
 }

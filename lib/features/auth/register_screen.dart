@@ -25,6 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   bool isPasswordVisible = false;
   bool isConfirmPasswordVisible = false;
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -220,42 +221,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   HeightSpace(40),
-                  PrimayButtonWidget(
-                    buttonText: "Register",
-                    onPress: () {
-                      if (formKey.currentState!.validate()) {
-                        FirebaseFunction.createUserAccount(
-                          email: emailController.text,
-                          password: passwordController.text,
-                          userName: nameController.text,
-                          phone: phoneController.text,
-                          onSuccess: () {
-                            context.go(AppRoutes.mainScreen);
+                  isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xffD4AF37),
+                          ),
+                        )
+                      : PrimayButtonWidget(
+                          buttonText: "Register",
+                          onPress: () {
+                            if (formKey.currentState!.validate()) {
+                              setState(() => isLoading = true);
+                              FirebaseFunction.createUserAccount(
+                                email: emailController.text,
+                                password: passwordController.text,
+                                userName: nameController.text,
+                                phone: phoneController.text,
+                                onSuccess: () {
+                                  if (mounted) {
+                                    setState(() => isLoading = false);
+                                    context.go(AppRoutes.mainScreen);
+                                  }
+                                },
+                                onError: (error) {
+                                  if (mounted) {
+                                    setState(() => isLoading = false);
+                                  }
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: const Text("Error"),
+                                        content: Text(error),
+                                        actions: [
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: const Text("OK"),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              );
+                            }
                           },
-                          onError: (error) {
-                            setState(() {});
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: Text("Error"),
-                                  content: Text(error),
-                                  actions: [
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                      child: Text("OK"),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        );
-                      }
-                    },
-                  ),
+                        ),
                   HeightSpace(30),
                   Row(
                     children: [

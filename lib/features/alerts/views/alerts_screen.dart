@@ -7,6 +7,8 @@ import 'package:gold_caurd_app/core/widgets/spacing_widgets.dart';
 import '../models/alert_model.dart';
 import '../services/alert_firebase_service.dart';
 import '../services/simple_alert_service.dart';
+import '../../notification/background_notification_service.dart';
+import '../../notification/fcm_services.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -25,6 +27,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   String selectedKarat = '24K';
   String selectedCurrency = 'EGP';
+  String selectedDirection = 'above';
 
   @override
   void initState() {
@@ -157,138 +160,254 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   ),
                 ],
               ),
-              content: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonFormField<String>(
-                      value: selectedKarat,
-                      dropdownColor: Colors.grey[850],
-                      style: TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Select Karat',
-                        labelStyle: TextStyle(color: AppColors.secondaryColor),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: selectedKarat,
+                        dropdownColor: Colors.grey[850],
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Select Karat',
+                          labelStyle: TextStyle(
                             color: AppColors.secondaryColor,
                           ),
-                          borderRadius: BorderRadius.circular(15.r),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: AppColors.secondaryColor,
+                            ),
+                            borderRadius: BorderRadius.circular(15.r),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: AppColors.primaryColor,
+                            ),
+                            borderRadius: BorderRadius.circular(15.r),
+                          ),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.primaryColor),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
+                        items: ['24K', '21K', '18K'].map((karat) {
+                          return DropdownMenuItem(
+                            value: karat,
+                            child: Text(karat),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setDialogState(() => selectedKarat = value!);
+                        },
                       ),
-                      items: ['24K', '21K', '18K'].map((karat) {
-                        return DropdownMenuItem(
-                          value: karat,
-                          child: Text(karat),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setDialogState(() => selectedKarat = value!);
-                      },
-                    ),
-                    HeightSpace(15),
+                      HeightSpace(15),
 
-                    DropdownButtonFormField<String>(
-                      value: selectedCurrency,
-                      dropdownColor: Colors.grey[850],
-                      style: TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Select Currency',
-                        labelStyle: TextStyle(color: AppColors.secondaryColor),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
+                      DropdownButtonFormField<String>(
+                        value: selectedCurrency,
+                        dropdownColor: Colors.grey[850],
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Select Currency',
+                          labelStyle: TextStyle(
                             color: AppColors.secondaryColor,
                           ),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.primaryColor),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                      ),
-                      items: ['USD', 'EGP'].map((currency) {
-                        return DropdownMenuItem(
-                          value: currency,
-                          child: Text(
-                            currency == 'USD' ? '🇺🇸 USD' : '🇪🇬 EGP',
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: AppColors.secondaryColor,
+                            ),
+                            borderRadius: BorderRadius.circular(15.r),
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setDialogState(() => selectedCurrency = value!);
-                      },
-                    ),
-                    HeightSpace(15),
-
-                    TextFormField(
-                      controller: priceController,
-                      keyboardType: TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      style: TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Target Price per Gram',
-                        labelStyle: TextStyle(color: AppColors.secondaryColor),
-                        hintText: 'e.g. 4000',
-                        hintStyle: TextStyle(color: Colors.grey),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: AppColors.secondaryColor,
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: AppColors.primaryColor,
+                            ),
+                            borderRadius: BorderRadius.circular(15.r),
                           ),
-                          borderRadius: BorderRadius.circular(15.r),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.primaryColor),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red),
-                          borderRadius: BorderRadius.circular(15.r),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter target price';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Please enter a valid number';
-                        }
-                        return null;
-                      },
-                    ),
-                    HeightSpace(15),
-
-                    Container(
-                      padding: EdgeInsets.all(10.w),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue,
-                            size: 20.sp,
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
+                        items: ['USD', 'EGP'].map((currency) {
+                          return DropdownMenuItem(
+                            value: currency,
                             child: Text(
-                              'You\'ll be notified when you open the app',
-                              style: TextStyle(
-                                color: Colors.blue[200],
-                                fontSize: 11.sp,
+                              currency == 'USD' ? '🇺🇸 USD' : '🇪🇬 EGP',
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setDialogState(() => selectedCurrency = value!);
+                        },
+                      ),
+                      HeightSpace(15),
+
+                      TextFormField(
+                        controller: priceController,
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Target Price per Gram',
+                          labelStyle: TextStyle(
+                            color: AppColors.secondaryColor,
+                          ),
+                          hintText: 'e.g. 4000',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: AppColors.secondaryColor,
+                            ),
+                            borderRadius: BorderRadius.circular(15.r),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: AppColors.primaryColor,
+                            ),
+                            borderRadius: BorderRadius.circular(15.r),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.red),
+                            borderRadius: BorderRadius.circular(15.r),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter target price';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Please enter a valid number';
+                          }
+                          return null;
+                        },
+                      ),
+                      HeightSpace(15),
+
+                      // Direction selector
+                      Text(
+                        'Alert when price goes:',
+                        style: TextStyle(
+                          color: AppColors.secondaryColor,
+                          fontSize: 13.sp,
+                        ),
+                      ),
+                      HeightSpace(8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setDialogState(
+                                () => selectedDirection = 'above',
+                              ),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                decoration: BoxDecoration(
+                                  color: selectedDirection == 'above'
+                                      ? Colors.green.withValues(alpha: 0.3)
+                                      : Colors.grey[800],
+                                  borderRadius: BorderRadius.circular(10.r),
+                                  border: Border.all(
+                                    color: selectedDirection == 'above'
+                                        ? Colors.green
+                                        : Colors.grey,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.arrow_upward,
+                                        color: Colors.green,
+                                        size: 18.sp,
+                                      ),
+                                      SizedBox(width: 4.w),
+                                      Text(
+                                        'Above',
+                                        style: TextStyle(
+                                          color: selectedDirection == 'above'
+                                              ? Colors.green
+                                              : Colors.grey,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setDialogState(
+                                () => selectedDirection = 'below',
+                              ),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                decoration: BoxDecoration(
+                                  color: selectedDirection == 'below'
+                                      ? Colors.red.withValues(alpha: 0.3)
+                                      : Colors.grey[800],
+                                  borderRadius: BorderRadius.circular(10.r),
+                                  border: Border.all(
+                                    color: selectedDirection == 'below'
+                                        ? Colors.red
+                                        : Colors.grey,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.arrow_downward,
+                                        color: Colors.red,
+                                        size: 18.sp,
+                                      ),
+                                      SizedBox(width: 4.w),
+                                      Text(
+                                        'Below',
+                                        style: TextStyle(
+                                          color: selectedDirection == 'below'
+                                              ? Colors.red
+                                              : Colors.grey,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      HeightSpace(15),
+
+                      Container(
+                        padding: EdgeInsets.all(10.w),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.notifications_active,
+                              color: Colors.green,
+                              size: 20.sp,
+                            ),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: Text(
+                                'You\'ll receive a notification even when the app is closed',
+                                style: TextStyle(
+                                  color: Colors.green[200],
+                                  fontSize: 11.sp,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -327,6 +446,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         targetPrice: targetPrice,
         karat: selectedKarat,
         currency: selectedCurrency,
+        direction: selectedDirection,
         createdAt: DateTime.now(),
       );
 
@@ -369,6 +489,27 @@ class _AlertsScreenState extends State<AlertsScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _testNotification() async {
+    try {
+      // 1. Send a test local notification immediately
+      await BackgroundNotificationService.showPriceAlertNotification(
+        title: '🔔 Test Notification',
+        body:
+            'Notifications are working! Background alerts will fire every ~15 minutes.',
+        notificationId: 999,
+      );
+
+      _showSuccessSnackBar(
+        'Test notification sent! Check your notification bar.',
+      );
+
+      // 2. Also trigger a one-off background check
+      await BackgroundPriceChecker.runOnce();
+    } catch (e) {
+      showErrorSnackBar('Notification test failed: $e');
+    }
   }
 
   void showErrorSnackBar(String message) {
@@ -414,6 +555,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
               icon: Icon(Icons.refresh, color: AppColors.primaryColor),
               tooltip: 'Check Alerts Now',
             ),
+          IconButton(
+            onPressed: _testNotification,
+            icon: Icon(Icons.notifications_active, color: Colors.green),
+            tooltip: 'Test Notification',
+          ),
         ],
       ),
       body: isLoading
@@ -527,12 +673,26 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       ),
                     ),
                     SizedBox(height: 4.h),
-                    Text(
-                      'Target: ${alert.targetPrice.toStringAsFixed(2)} ${alert.currency}/gram',
-                      style: TextStyle(
-                        color: AppColors.secondaryColor,
-                        fontSize: 13.sp,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          alert.direction == 'above'
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          color: alert.direction == 'above'
+                              ? Colors.green
+                              : Colors.red,
+                          size: 14.sp,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          '${alert.direction == 'above' ? 'Above' : 'Below'} ${alert.targetPrice.toStringAsFixed(2)} ${alert.currency}/gram',
+                          style: TextStyle(
+                            color: AppColors.secondaryColor,
+                            fontSize: 13.sp,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

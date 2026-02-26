@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gold_caurd_app/core/styling/app_colors.dart';
@@ -8,6 +9,7 @@ import 'package:gold_caurd_app/firebase/firebase_function.dart';
 
 import '../../core/routing/app_routes.dart';
 import '../../core/widgets/primay_button_widget.dart';
+import '../notification/fcm_services.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,12 +23,122 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   bool isPasswordVisible = false;
+  bool isLoading = false;
 
   @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  void _showForgotPasswordDialog() {
+    final resetEmailController = TextEditingController(
+      text: emailController.text,
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.lock_reset,
+                color: AppColors.primaryColor,
+                size: 28.sp,
+              ),
+              SizedBox(width: 10.w),
+              Text(
+                'Reset Password',
+                style: TextStyle(color: Colors.white, fontSize: 18.sp),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Enter your email address and we\'ll send you a link to reset your password.',
+                style: TextStyle(
+                  color: AppColors.secondaryColor,
+                  fontSize: 13.sp,
+                ),
+              ),
+              SizedBox(height: 15.h),
+              TextField(
+                controller: resetEmailController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Email Address',
+                  hintStyle: TextStyle(color: Colors.grey, fontSize: 14.sp),
+                  prefixIcon: Icon(
+                    Icons.email_outlined,
+                    color: AppColors.primaryColor,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.secondaryColor),
+                    borderRadius: BorderRadius.circular(15.r),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                    borderRadius: BorderRadius.circular(15.r),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = resetEmailController.text.trim();
+                if (email.isEmpty) return;
+
+                try {
+                  await FirebaseAuth.instance.sendPasswordResetEmail(
+                    email: email,
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(
+                        content: Text('Password reset link sent to $email'),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Send Link'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -147,7 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () => _showForgotPasswordDialog(),
                       child: Text(
                         "Forgot Password?",
                         style: TextStyle(
@@ -160,39 +272,54 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   HeightSpace(30),
                   // Login Button
-                  PrimayButtonWidget(
-                    buttonText: "Login",
-                    onPress: () {
-                      if (formKey.currentState!.validate()) {
-                        FirebaseFunction.login(
-                          email: emailController.text,
-                          password: passwordController.text,
-                          onSuccess: () {
-                            context.go(AppRoutes.mainScreen);
+                  isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xffD4AF37),
+                          ),
+                        )
+                      : PrimayButtonWidget(
+                          buttonText: "Login",
+                          onPress: () {
+                            if (formKey.currentState!.validate()) {
+                              setState(() => isLoading = true);
+                              FirebaseFunction.login(
+                                email: emailController.text,
+                                password: passwordController.text,
+                                onSuccess: () async {
+                                  // Register background task with userId
+                                  await BackgroundPriceChecker.registerPeriodicTask();
+                                  if (mounted) {
+                                    setState(() => isLoading = false);
+                                    context.go(AppRoutes.mainScreen);
+                                  }
+                                },
+                                onError: (error) {
+                                  if (mounted) {
+                                    setState(() => isLoading = false);
+                                  }
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: const Text("Error"),
+                                        content: Text(error),
+                                        actions: [
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: const Text("OK"),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              );
+                            }
                           },
-                          onError: (error) {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: Text("Error"),
-                                  content: Text(error),
-                                  actions: [
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                      child: Text("OK"),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        );
-                      }
-                    },
-                  ),
+                        ),
                   HeightSpace(40),
 
                   Row(

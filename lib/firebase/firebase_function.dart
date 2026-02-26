@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gold_caurd_app/firebase/gold_model.dart';
+import 'package:gold_caurd_app/firebase/user_model.dart';
 
 class FirebaseFunction {
   static CollectionReference<UserModel> getUserCollection() {
@@ -43,15 +43,10 @@ class FirebaseFunction {
       );
       await addUser(user);
       onSuccess();
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        onError(e.message);
-      } else if (e.code == 'email-already-in-use') {
-        onError(e.message);
-      }
-      onError(e.message);
+    } on FirebaseException catch (e) {
+      onError(e.message ?? 'Firebase error');
     } catch (e) {
-      onError("Something went wrong");
+      onError('Error: $e');
     }
   }
 
@@ -71,7 +66,7 @@ class FirebaseFunction {
       } else {
         onError('Login failed');
       }
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseException catch (e) {
       if (e.code == 'user-not-found') {
         onError('No user found with this email');
       } else if (e.code == 'wrong-password') {
@@ -79,10 +74,10 @@ class FirebaseFunction {
       } else if (e.code == 'invalid-email') {
         onError('Invalid email format');
       } else {
-        onError('Wrong email or password');
+        onError(e.message ?? 'Wrong email or password');
       }
     } catch (e) {
-      onError('Something went wrong');
+      onError('Error: $e');
     }
   }
 }
